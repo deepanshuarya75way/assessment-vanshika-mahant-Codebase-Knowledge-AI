@@ -15,7 +15,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_qdrant import (QdrantVectorStore, FastEmbedSparse, RetrievalMode)
 from langchain_text_splitters import Language, RecursiveCharacterTextSplitter
 from qdrant_client import QdrantClient
-from qdrant_client.http.models import Distance, VectorParams
+from qdrant_client.http.models import Distance, VectorParams, SparseVectorParams
 
 load_dotenv()
 
@@ -218,12 +218,21 @@ def build_index(repo_input: str) -> Dict:
     chunked_docs = sanitize_metadata(chunked_docs)
 
     client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
+
+
     if client.collection_exists(repo_id):
         client.delete_collection(repo_id)
     client.create_collection(
         collection_name=repo_id,
         vectors_config=VectorParams(size=EMBED_DIM, distance=Distance.COSINE),
+        sparse_vectors_config={"langchain-sparse":SparseVectorParams()},
     )
+    # if client.collection_exists(repo_id):
+    #     client.delete_collection(repo_id)
+    # client.create_collection(
+    #     collection_name=repo_id,
+    #     vectors_config=VectorParams(size=EMBED_DIM, distance=Distance.COSINE),
+    # )
     # vectorstore = QdrantVectorStore(
     #     client=client,
     #     collection_name=repo_id,
@@ -234,8 +243,9 @@ def build_index(repo_input: str) -> Dict:
         client=client,
         collection_name=repo_id,
         embedding=embeddings,
-        sparse_embeddings = sparse_embeddings,
+        sparse_embedding = sparse_embeddings,
         retrieval_mode = RetrievalMode.HYBRID,
+        #force_recreate = True
     )
     vectorstore.add_documents(chunked_docs)
     

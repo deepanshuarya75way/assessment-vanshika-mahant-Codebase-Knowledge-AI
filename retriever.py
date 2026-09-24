@@ -52,7 +52,7 @@ def _load_vectorstore_cached(repo_id: str, model_name: str) -> QdrantVectorStore
         client=client,
         collection_name=repo_id,
         embedding=embeddings,
-        sparse_embeddings=sparse_embeddings,
+        sparse_embedding=sparse_embeddings,
         retrieval_mode=RetrievalMode.HYBRID
     )
 
@@ -377,7 +377,7 @@ def answer_question(
     docs = vectorstore.similarity_search(
         question,
         k=top_k,
-        fetch_k=max(20, top_k * 4),
+       # fetch_k=max(20, top_k * 4),
     )
 
     if not docs:
