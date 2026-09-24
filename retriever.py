@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from dotenv import load_dotenv
 from langchain_core.documents import Document
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_qdrant import QdrantVectorStore
+from langchain_qdrant import (QdrantVectorStore, FastEmbedSparse, RetrievalMode)
 from qdrant_client import QdrantClient
 from groq import Groq
 
@@ -47,10 +47,13 @@ def _load_vectorstore_cached(repo_id: str, model_name: str) -> QdrantVectorStore
             f"Collection '{repo_id}' not found in Qdrant. Please index first."
         )
     embeddings = _get_embeddings_cached(model_name)
+    sparse_embeddings = FastEmbedSparse(model_name="Qdrant/bm25")
     return QdrantVectorStore(
         client=client,
         collection_name=repo_id,
         embedding=embeddings,
+        sparse_embeddings=sparse_embeddings,
+        retrieval_mode=RetrievalMode.HYBRID
     )
 
 
@@ -365,7 +368,13 @@ def answer_question(
     # Normal semantic retrieval
     vectorstore = _load_vectorstore_cached(repo_id, EMBED_MODEL)
 
-    docs = vectorstore.max_marginal_relevance_search(
+    # docs = vectorstore.max_marginal_relevance_search(
+    #     question,
+    #     k=top_k,
+    #     fetch_k=max(20, top_k * 4),
+    # )
+
+    docs = vectorstore.similarity_search(
         question,
         k=top_k,
         fetch_k=max(20, top_k * 4),
